@@ -1,0 +1,43 @@
+﻿@page "/gallery"
+@inherits BaseComponent
+@inject IPhotoService PhotoService
+@inject NavigationManager NavigationManager
+
+<link href="/css/collapsible.css" rel="stylesheet" />
+<AuthorizeView>
+    <Authorized>
+        @if (!albumView)
+        {
+            <UploadImagesControl OnSubmitCallback="RefreshGallery"></UploadImagesControl>
+
+            <PhotoGrid @ref="photoGrid" OnAddAlbumCallback="AddToAlbum"></PhotoGrid>
+        }
+        else
+        {
+            <Albums SelectedPhotos="SelectedPhotos"></Albums>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>Authorized access olny!</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    private List<string> SelectedPhotos = new List<string>();
+    public PhotoGrid photoGrid { get; set; } = new PhotoGrid();
+    private bool albumView = false;
+
+    private void AddToAlbum()
+    {
+        albumView = !albumView;
+    }
+
+    private async Task RefreshGallery()
+    {
+        await photoGrid.Refresh();
+    }
+
+}
+
+

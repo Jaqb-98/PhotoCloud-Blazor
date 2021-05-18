@@ -1,0 +1,27 @@
+﻿
+@using System.Security.Claims
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    public ClaimsPrincipal User { get; set; }
+    public string UserId { get; set; }
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        User = authState.User;
+
+        if (User.Identity.IsAuthenticated)
+        {
+
+            _claims = User.Claims;
+            UserId = _claims.ToList().FirstOrDefault().Value;
+        }
+
+
+
+        await base.OnInitializedAsync();
+    }
+}

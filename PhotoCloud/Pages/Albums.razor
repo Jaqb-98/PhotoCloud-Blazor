@@ -1,0 +1,111 @@
+﻿@page "/albums"
+@inherits BaseComponent
+@inject IPhotoService PhotoService
+<link href="/css/collapsible.css" rel="stylesheet" />
+
+<AuthorizeView>
+    <Authorized>
+        @if (!albumSelected)
+        {
+
+            <div class="container">
+                <h3>Albums</h3>
+                <div class="row">
+                    <div class="col">
+                        <p>
+                            <button class="btn btn-primary collapsible" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                                Add new album
+                            </button>
+                        </p>
+                        <section class="collapse" id="collapseExample">
+                            <form @onsubmit="(() => CreateNewAlbum(UserId, NewAlbumName, SelectedPhotos))">
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" @bind="NewAlbumName" placeholder="Album name" aria-label="Recipient's username" aria-describedby="button-addon2">
+                                    <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Add</button>
+                                </div>
+
+                            </form>
+                        </section>
+                    </div>
+                    <div class="col"></div>
+                </div>
+            </div>
+
+
+            <section>
+                <div class="container">
+                    <div class="row">
+                        @foreach (var album in userAlbums)
+                        {
+                            string path = GetAlbumCover(album.Id).Result;
+
+                            <div class="card" style="width: 18rem;">
+                                <img src="/images/@path" class="card-img-top" alt="...">
+                                <div class="card-body">
+                                    <h5 class="card-title">@album.AlbumName</h5>
+                                    <p class="card-text">Photos: @album.Photos.Count.ToString()</p>
+                                    <a @onclick="(()=>SeeAlbum(album.Id))" class="btn btn-primary">See album</a>
+                                </div>
+                            </div>
+                        }
+
+
+
+                    </div>
+                </div>
+            </section>
+        }
+        else
+        {
+
+            <PhotoGrid Album="album"></PhotoGrid>
+        }
+
+    </Authorized>
+    <NotAuthorized>
+        <p>Authorized access only!</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+    [Parameter]
+    public List<string> SelectedPhotos { get; set; }
+
+    private ICollection<AlbumModel> userAlbums;
+
+    private string NewAlbumName = String.Empty;
+
+    private bool albumSelected = false;
+
+    private AlbumModel album;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        userAlbums = await PhotoService.GetUserAlbums(UserId);
+
+
+    }
+
+    private async Task CreateNewAlbum(string userId, string albumName, List<string> photosIds)
+    {
+        await PhotoService.CreateNewAlbum(userId, albumName, photosIds);
+        albumName = String.Empty;
+    }
+
+    private async Task<string> GetAlbumCover(string albumId)
+    {
+        var path = await PhotoService.GetFirstPhotoFromAlbum(albumId);
+        return path;
+    }
+
+    private async Task SeeAlbum(string albumId)
+    {
+        album = await PhotoService.GetAlbumPhotos(albumId);
+        albumSelected = true;
+        this.StateHasChanged();
+
+    }
+
+}

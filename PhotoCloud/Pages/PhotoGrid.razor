@@ -1,0 +1,132 @@
+﻿@inherits BaseComponent
+@inject IPhotoService PhotoService
+
+<h4>Your photos</h4>
+<section id="PhotosSection">
+    <div id="yourPhotos">
+        <div id="lightgallery">
+            @if (usersImages != null)
+            {
+
+                @if (selectable)
+                {
+
+                    @foreach (var photo in usersImages)
+                    {
+                        <div id="photoContainer">
+                            <div class="form-check">
+                                <input @onchange="@((e)=> SelectPhoto(photo.Id,e.Value))" class="form-check-input" type="checkbox" name="selectedObjects" value="@photo.Id" id="flexCheckDefault">
+                            </div>
+
+                            <a href="/images/@photo.Id" data-lightbox="photos">
+                                <img src="/images/@photo.Id" />
+                            </a>
+                        </div>
+                    }
+
+                }
+                else
+                {
+
+                    @foreach (var photo in usersImages)
+                    {
+                        <a href="/images/@photo.Id" data-lightbox="photos">
+                            <img src="/images/@photo.Id" />
+                        </a>
+                    }
+
+                }
+            }
+
+        </div>
+
+    </div>
+</section>
+<hr />
+<section id="actions">
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <button @onclick="SelectImages" type="button" class="btn btn-primary">Select</button>
+
+            </div>
+            <div class="col">
+                @if (selectable)
+                {
+                    <button @onclick="AddToAlbum" type="button" class="btn btn-primary">Add to album</button>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+
+    private ICollection<PhotoModel> usersImages;
+
+    private List<string> SelectedPhotos = new List<string>();
+
+    private bool selectable = false;
+
+    [Parameter]
+    public EventCallback<bool> OnAddAlbumCallback { get; set; }
+
+    [Parameter]
+    public AlbumModel Album { get; set; } = null;
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (Album == null)
+        {
+
+            if (User.Identity.IsAuthenticated)
+                usersImages = await PhotoService.GetUsersPhotos(UserId);
+        }
+        else
+        {
+            usersImages = Album.Photos;
+        }
+
+    }
+
+    private void SelectImages()
+    {
+        selectable = !selectable;
+    }
+
+    private void SelectPhoto(string photoId, object checkedValue)
+    {
+        if ((bool)checkedValue)
+        {
+            if (!SelectedPhotos.Contains(photoId))
+            {
+                SelectedPhotos.Add(photoId);
+            }
+        }
+        else
+        {
+            if (SelectedPhotos.Contains(photoId))
+            {
+                SelectedPhotos.Remove(photoId);
+            }
+        }
+    }
+
+    public async Task Refresh()
+    {
+        this.StateHasChanged();
+        await OnInitializedAsync();
+    }
+
+    private async void AddToAlbum()
+    {
+        await OnAddAlbumCallback.InvokeAsync();
+    }
+
+}

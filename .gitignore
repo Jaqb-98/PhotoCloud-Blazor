@@ -1,0 +1,8 @@
+
+PhotoCloud/appsettings.json
+**/wwwroot/images/*
+bin
+obj
+.vs
+PhotoCloud.sln
+PhotoCloud/appsettings.Development.json
