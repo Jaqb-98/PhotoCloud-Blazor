@@ -28,9 +28,11 @@
     public PhotoGrid photoGrid { get; set; } = new PhotoGrid();
     private bool albumView = false;
 
-    private void AddToAlbum()
+    private async Task AddToAlbum(ICollection<string> photoIds)
     {
         albumView = !albumView;
+        SelectedPhotos = photoIds.ToList();
+
     }
 
     private async Task RefreshGallery()
