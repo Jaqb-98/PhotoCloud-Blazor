@@ -86,9 +86,10 @@ namespace PhotoCloud.Services
             {
                 var photos = new List<PhotoModel>();
 
-                foreach (var photo in photoIds)
+                foreach (var photoId in photoIds)
                 {
-                    photos.Add(_context.Photos.FirstOrDefault(x => x.Id == photo));
+                    var photo = await _context.Photos.FirstOrDefaultAsync(x => x.Id == photoId);
+                    photos.Add(photo);
                 }
 
                 newAlbum.Photos = photos;
@@ -105,9 +106,13 @@ namespace PhotoCloud.Services
 
         public async Task<string> GetFirstPhotoFromAlbum(string albumId)
         {
-            var album = _context.Albums.Include(x => x.Photos).FirstOrDefault(x => x.Id == albumId);
-            var path = album.Photos.FirstOrDefault().Id;
-            return path;
+            var album = _context.Albums.FirstOrDefault(x => x.Id == albumId);
+            var path = album.Photos.FirstOrDefault();
+            if (path != null)
+                return path.Id;
+
+            return null;
+
         }
 
 
@@ -116,6 +121,21 @@ namespace PhotoCloud.Services
             var album = _context.Albums.FirstOrDefault(x => x.Id == albumId);
 
             return album;
+        }
+
+
+        public async Task AddPhotosToAlbum(string albumId, List<string> photoIds)
+        {
+            var album =  _context.Albums.FirstOrDefault(x => x.Id == albumId);
+            var photos = await _context.Photos.Where(x => photoIds.Contains(x.Id)).ToListAsync();
+
+            foreach (var photo in photos)
+            {
+                album.Photos.Add(photo);
+
+            }
+
+            await _context.SaveChangesAsync();
         }
 
     }
