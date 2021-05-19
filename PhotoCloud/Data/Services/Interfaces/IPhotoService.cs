@@ -14,5 +14,7 @@ namespace PhotoCloud.Services
         Task CreateNewAlbum(string userId, string albumName, List<string> photoIds);
         Task<string> GetFirstPhotoFromAlbum(string albumId);
         Task<AlbumModel> GetAlbumPhotos(string albumId);
+
+        Task AddPhotosToAlbum(string albumId, List<string> photoIds);
     }
 }
