@@ -53,7 +53,7 @@
             <div class="col">
                 @if (selectable)
                 {
-                    <button @onclick="AddToAlbum" type="button" class="btn btn-primary">Add to album</button>
+                    <button @onclick="(()=> OnAddAlbumCallback.InvokeAsync(SelectedPhotos))" type="button" class="btn btn-primary">Add to album</button>
                 }
             </div>
         </div>
@@ -64,15 +64,20 @@
 
     private ICollection<PhotoModel> usersImages;
 
-    private List<string> SelectedPhotos = new List<string>();
+    [Parameter]
+    public List<string> SelectedPhotos { get; set; } = new List<string>();
 
     private bool selectable = false;
 
     [Parameter]
-    public EventCallback<bool> OnAddAlbumCallback { get; set; }
+    public EventCallback<ICollection<string>> OnAddAlbumCallback { get; set; }
 
     [Parameter]
     public AlbumModel Album { get; set; } = null;
+
+
+
+
 
 
 
@@ -124,9 +129,9 @@
         await OnInitializedAsync();
     }
 
-    private async void AddToAlbum()
+    private async Task AddToAlbum(List<string> selectedPhotos)
     {
-        await OnAddAlbumCallback.InvokeAsync();
+        await OnAddAlbumCallback.InvokeAsync(selectedPhotos);
     }
 
 }
