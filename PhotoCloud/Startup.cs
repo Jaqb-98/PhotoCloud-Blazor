@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhotoCloud.Areas.Identity;
 using PhotoCloud.Data;
+using PhotoCloud.Data.Services;
+using PhotoCloud.Data.Services.Interfaces;
 using PhotoCloud.Models;
 using PhotoCloud.Services;
 using System;
@@ -43,6 +45,8 @@ namespace PhotoCloud
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddScoped<IPhotoService, PhotoService>();
+            services.AddSingleton<IState, State>();
+            services.AddScoped<NotifierService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
