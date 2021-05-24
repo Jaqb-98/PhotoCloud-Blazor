@@ -1,68 +1,62 @@
 ﻿@page "/albums"
 @inherits BaseComponent
 @inject IPhotoService PhotoService
+@inject IState State
+@inject NotifierService Notifier
+@inject NavigationManager NavigationManager 
 <link href="/css/collapsible.css" rel="stylesheet" />
 
 <AuthorizeView>
     <Authorized>
-        @if (!albumSelected)
-        {
 
-            <div class="container">
-                <h3>Albums</h3>
-                <div class="row">
-                    <div class="col">
-                        <p>
-                            <button class="btn btn-primary collapsible" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
-                                Add new album
-                            </button>
-                        </p>
-                        <section class="collapse" id="collapseExample">
-                            <form @onsubmit="(() => CreateNewAlbum(UserId, NewAlbumName, SelectedPhotos))">
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control" @bind="NewAlbumName" placeholder="Album name" aria-label="Recipient's username" aria-describedby="button-addon2">
-                                    <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Add</button>
-                                </div>
+        <div class="container">
+            <h3>Albums</h3>
+            <div class="row">
+                <div class="col">
+                    <p>
+                        <button class="btn btn-primary collapsible" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                            Add new album
+                        </button>
+                    </p>
+                    <section class="collapse" id="collapseExample">
+                        <form @onsubmit="(() => CreateNewAlbum(UserId, NewAlbumName))">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" @bind="NewAlbumName" placeholder="Album name" aria-label="Recipient's username" aria-describedby="button-addon2">
+                                <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Add</button>
+                            </div>
 
-                            </form>
-                        </section>
-                    </div>
+                        </form>
+                    </section>
                 </div>
             </div>
+        </div>
 
 
-            <section>
-                <div class="container">
-                    <div class="row">
-                        @foreach (var album in userAlbums)
-                        {
-                            string path = GetAlbumCover(album.Id).Result;
+        <section>
+            <div class="container">
+                <div class="row">
+                    @foreach (var album in userAlbums)
+                    {
+                        string path = GetAlbumCover(album.Id).Result;
 
-                            <div class="card" style="width: 18rem;">
-                                <img src="/images/@path" class="card-img-top" alt="...">
-                                <div class="card-body">
-                                    <h5 class="card-title">@album.AlbumName</h5>
-                                    <p class="card-text">Photos: @album.Photos.Count.ToString()</p>
-                                    <a @onclick="(()=>SeeAlbum(album.Id))" class="btn btn-primary">See album</a>
-                                    @if (SelectedPhotos.Count != 0)
-                                    {
-                                        <a @onclick="(()=>AddPhotosToAlbum(album.Id))" class="btn btn-primary">Add</a>
-                                    }
-                                </div>
+                        <div class="card" style="width: 18rem;">
+                            <img src="/images/@path" class="card-img-top" alt="...">
+                            <div class="card-body">
+                                <h5 class="card-title">@album.AlbumName</h5>
+                                <p class="card-text">Photos: @album.Photos.Count.ToString()</p>
+                                <a @onclick="(()=>SeeAlbum(album.Id))" class="btn btn-primary">See album</a>
+                                @if (State.AreImagesSelected)
+                                {
+                                    <a @onclick="(()=>AddPhotosToAlbum(album.Id))" class="btn btn-primary">Add</a>
+                                }
                             </div>
-                        }
+                        </div>
+                    }
 
-
-
-                    </div>
                 </div>
-            </section>
-        }
-        else
-        {
+            </div>
+        </section>
 
-            <PhotoGrid Album="album"></PhotoGrid>
-        }
 
     </Authorized>
     <NotAuthorized>
@@ -88,14 +82,12 @@
         await base.OnInitializedAsync();
         userAlbums = await PhotoService.GetUserAlbums(UserId);
 
-
     }
 
-    private async Task CreateNewAlbum(string userId, string albumName, List<string> photosIds)
+    private async Task CreateNewAlbum(string userId, string albumName)
     {
-        await PhotoService.CreateNewAlbum(userId, albumName, photosIds);
-        albumName = String.Empty;
-        SelectedPhotos.Clear();
+        await PhotoService.CreateNewAlbum(userId, albumName, Notifier.GetSelectedPhotos());
+        State.AreImagesSelected = false;
         await OnInitializedAsync();
     }
 
@@ -105,18 +97,18 @@
         return path;
     }
 
-    private async Task SeeAlbum(string albumId)
+    private void SeeAlbum(string albumId)
     {
-        album = await PhotoService.GetAlbumPhotos(albumId);
-        albumSelected = true;
-        this.StateHasChanged();
+        NavigationManager.NavigateTo($"/album/{albumId}");
 
     }
 
     private async Task AddPhotosToAlbum(string albumId)
     {
-        await PhotoService.AddPhotosToAlbum(albumId, SelectedPhotos);
-        SelectedPhotos.Clear();
+        await PhotoService.AddPhotosToAlbum(albumId, Notifier.GetSelectedPhotos());
+        State.AreImagesSelected = false;
+        this.StateHasChanged();
     }
+
 
 }
