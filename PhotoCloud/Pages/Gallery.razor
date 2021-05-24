@@ -3,19 +3,13 @@
 @inject IPhotoService PhotoService
 @inject NavigationManager NavigationManager
 
+
 <link href="/css/collapsible.css" rel="stylesheet" />
 <AuthorizeView>
     <Authorized>
-        @if (!albumView)
-        {
-            <UploadImagesControl OnSubmitCallback="RefreshGallery"></UploadImagesControl>
+        <UploadImagesControl OnSubmitCallback="RefreshGallery"></UploadImagesControl>
 
-            <PhotoGrid @ref="photoGrid" OnAddAlbumCallback="AddToAlbum"></PhotoGrid>
-        }
-        else
-        {
-            <Albums SelectedPhotos="SelectedPhotos"></Albums>
-        }
+        <PhotoGrid @ref="photoGrid"></PhotoGrid>
     </Authorized>
     <NotAuthorized>
         <p>Authorized access olny!</p>
@@ -24,16 +18,8 @@
 
 
 @code {
-    private List<string> SelectedPhotos = new List<string>();
     public PhotoGrid photoGrid { get; set; } = new PhotoGrid();
-    private bool albumView = false;
 
-    private async Task AddToAlbum(ICollection<string> photoIds)
-    {
-        albumView = !albumView;
-        SelectedPhotos = photoIds.ToList();
-
-    }
 
     private async Task RefreshGallery()
     {
