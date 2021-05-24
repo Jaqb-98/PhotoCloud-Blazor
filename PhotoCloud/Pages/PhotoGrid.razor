@@ -1,7 +1,19 @@
-﻿@inherits BaseComponent
-@inject IPhotoService PhotoService
+﻿@page "/album/{AlbumId}"
 
-<h4>Your photos</h4>
+@inherits BaseComponent
+@inject IPhotoService PhotoService
+@inject IState State
+@inject NotifierService Notifier
+@inject NavigationManager NavigationManager
+
+@if (!String.IsNullOrEmpty(albumname))
+{
+    <h4>@albumname</h4>
+}
+else
+{
+    <h4>Your photos</h4>
+}
 <section id="PhotosSection">
     <div id="yourPhotos">
         <div id="lightgallery">
@@ -13,16 +25,12 @@
 
                     @foreach (var photo in usersImages)
                     {
-                        <div id="photoContainer">
-                            <div class="form-check">
-                                <input @onchange="@((e)=> SelectPhoto(photo.Id,e.Value))" class="form-check-input" type="checkbox" name="selectedObjects" value="@photo.Id" id="flexCheckDefault">
-                            </div>
-
-                            <a href="/images/@photo.Id" data-lightbox="photos">
-                                <img src="/images/@photo.Id" />
-                            </a>
-                        </div>
+                        <input type="checkbox" id="@photo.Id" @onchange="@((e)=> SelectPhoto(photo.Id,e.Value))" value="@photo.Id" />
+                        <label for="@photo.Id">
+                            <img src="/images/@photo.Id" />
+                        </label>
                     }
+
 
                 }
                 else
@@ -44,18 +52,16 @@
 </section>
 <hr />
 <section id="actions">
-    <div class="container">
-        <div class="row">
-            <div class="col">
-                <button @onclick="SelectImages" type="button" class="btn btn-primary">Select</button>
+    <div class="row">
+        <div class="col">
+            <button @onclick="SelectImages" type="button" class="btn btn-primary" style="position: absolute; bottom: 0;">Select</button>
 
-            </div>
-            <div class="col">
-                @if (selectable)
-                {
-                    <button @onclick="(()=> OnAddAlbumCallback.InvokeAsync(SelectedPhotos))" type="button" class="btn btn-primary">Add to album</button>
-                }
-            </div>
+        </div>
+        <div class="col">
+            @if (selectable)
+            {
+                <button @onclick="AddPhotos" type="button" class="btn btn-primary" style="position: absolute; bottom: 0;">Add to album</button>
+            }
         </div>
     </div>
 </section>
@@ -63,31 +69,21 @@
 @code {
 
     private ICollection<PhotoModel> usersImages;
-
-    [Parameter]
     public List<string> SelectedPhotos { get; set; } = new List<string>();
 
     private bool selectable = false;
 
     [Parameter]
-    public EventCallback<ICollection<string>> OnAddAlbumCallback { get; set; }
+    public string AlbumId { get; set; } = null;
 
-    [Parameter]
-    public AlbumModel Album { get; set; } = null;
-
-
-
-
-
-
-
+    private string albumname = String.Empty;
 
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
-        if (Album == null)
+        if (AlbumId == null)
         {
 
             if (User.Identity.IsAuthenticated)
@@ -95,7 +91,8 @@
         }
         else
         {
-            usersImages = Album.Photos;
+            usersImages = await PhotoService.GetAlbumPhotos(AlbumId);
+            albumname = await PhotoService.GetAlbumName(AlbumId);
         }
 
     }
@@ -103,6 +100,7 @@
     private void SelectImages()
     {
         selectable = !selectable;
+        SelectedPhotos.Clear();
     }
 
     private void SelectPhoto(string photoId, object checkedValue)
@@ -129,9 +127,13 @@
         await OnInitializedAsync();
     }
 
-    private async Task AddToAlbum(List<string> selectedPhotos)
+
+    private void AddPhotos()
     {
-        await OnAddAlbumCallback.InvokeAsync(selectedPhotos);
+        State.AreImagesSelected = true;
+        Notifier.AddToList(SelectedPhotos);
+        NavigationManager.NavigateTo("/albums");
+
     }
 
 }
