@@ -70,6 +70,8 @@
         browserFiles.Clear();
         SelectedImageDataUrls.Clear();
         await OnSubmitCallback.InvokeAsync();
+        this.StateHasChanged();
+        await OnInitializedAsync();
     }
 
 }

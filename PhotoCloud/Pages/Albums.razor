@@ -3,7 +3,7 @@
 @inject IPhotoService PhotoService
 @inject IState State
 @inject NotifierService Notifier
-@inject NavigationManager NavigationManager 
+@inject NavigationManager NavigationManager
 <link href="/css/collapsible.css" rel="stylesheet" />
 
 <AuthorizeView>
@@ -37,17 +37,16 @@
                 <div class="row">
                     @foreach (var album in userAlbums)
                     {
-                        string path = GetAlbumCover(album.Id).Result;
-
                         <div class="card" style="width: 18rem;">
-                            <img src="/images/@path" class="card-img-top" alt="...">
+                            <img src="@Cover(album.Id).Result" class="card-img-top" alt="...">
                             <div class="card-body">
                                 <h5 class="card-title">@album.AlbumName</h5>
                                 <p class="card-text">Photos: @album.Photos.Count.ToString()</p>
-                                <a @onclick="(()=>SeeAlbum(album.Id))" class="btn btn-primary">See album</a>
+                                <a @onclick="(() => SeeAlbum(album.Id))" class="btn btn-primary">See album</a>
+                                <a @onclick="(() => Delete_Click(album.Id))" class="btn btn-danger">Delete</a>
                                 @if (State.AreImagesSelected)
                                 {
-                                    <a @onclick="(()=>AddPhotosToAlbum(album.Id))" class="btn btn-primary">Add</a>
+                                    <a @onclick="(() => AddPhotosToAlbum(album.Id))" class="btn btn-primary">Add</a>
                                 }
                             </div>
                         </div>
@@ -56,6 +55,7 @@
                 </div>
             </div>
         </section>
+        <PhotoCloud.Controls.Confirm @ref="DeleteConfirmation" ConfirmationChanged="DeleteAlbum"></PhotoCloud.Controls.Confirm>
 
 
     </Authorized>
@@ -77,10 +77,14 @@
 
     private AlbumModel album;
 
+    protected ConfirmBase DeleteConfirmation { get; set; }
+    private string AlbumToDelete;
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        userAlbums = await PhotoService.GetUserAlbums(UserId);
+        if (User.Identity.IsAuthenticated)
+            userAlbums = await PhotoService.GetUserAlbums(UserId);
 
     }
 
@@ -89,12 +93,6 @@
         await PhotoService.CreateNewAlbum(userId, albumName, Notifier.GetSelectedPhotos());
         State.AreImagesSelected = false;
         await OnInitializedAsync();
-    }
-
-    private async Task<string> GetAlbumCover(string albumId)
-    {
-        var path = await PhotoService.GetFirstPhotoFromAlbum(albumId);
-        return path;
     }
 
     private void SeeAlbum(string albumId)
@@ -110,5 +108,26 @@
         this.StateHasChanged();
     }
 
+    private async Task DeleteAlbum(bool deleteConfirmed)
+    {
+        if (deleteConfirmed)
+        {
+            await PhotoService.DeleteAlbum(AlbumToDelete);
+            await OnInitializedAsync();
+        }
+    }
+
+    protected void Delete_Click(string albumId)
+    {
+        AlbumToDelete = albumId;
+        DeleteConfirmation.Show();
+    }
+
+    private async Task<string> Cover(string albumId)
+    {
+        var base64 = await PhotoService.MakeAlbumCover(albumId);
+        var cover = $"data:image/jpg;base64,{base64}";
+        return cover;
+    }
 
 }
