@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace PhotoCloud.Services
 {
     /// <summary>
@@ -78,12 +79,17 @@ namespace PhotoCloud.Services
         public async Task<ICollection<PhotoModel>> GetUsersPhotos(string userId, int page = 0, int photosPerPage = 20)
         {
             var user = await _context.Users.Where(x => x.Id == userId).Include(x => x.Photos).FirstOrDefaultAsync();
+            var user1 = await _context.Users.SingleAsync(x => x.Id == userId);
 
-            var photos = user.Photos
-                .OrderByDescending(x => x.UploadDate)
-                .Skip(page * photosPerPage)
-                .Take(photosPerPage)
-                .ToList();
+            //var photos = user.Photos
+            //    .OrderByDescending(x => x.UploadDate)
+            //    .Skip(page * photosPerPage)
+            //    .Take(photosPerPage)
+            //    .ToList();
+
+            var photos =  user.Photos.ToList();
+            //.OrderByDescending(x => x.UploadDate)
+
 
             return photos;
         }

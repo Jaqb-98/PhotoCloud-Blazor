@@ -5,6 +5,7 @@
 @inject IState State
 @inject NotifierService Notifier
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 
 <AuthorizeView>
@@ -52,33 +53,38 @@
         <section id="PhotosSection">
             <div id="yourPhotos">
                 <div id="lightgallery">
+
+
+                    @*@foreach (var photo in usersImages)
+                        {
+                            <input type="checkbox" id="@photo.Id" @onchange="@((e)=> SelectPhoto(photo.Id,e.Value))" value="@photo.Id" />
+                            <label for="@photo.Id">
+                                <img src="/images/@photo.Id" />
+                            </label>
+                        }*@
                     @if (usersImages != null)
                     {
 
-                        @if (selectable)
-                        {
-
-                            @foreach (var photo in usersImages)
+                        <Virtualize Context="photo" Items="@usersImages">
+                            @if (selectable)
                             {
-                                <input type="checkbox" id="@photo.Id" @onchange="@((e)=> SelectPhoto(photo.Id,e.Value))" value="@photo.Id" />
+                                <input type="checkbox" id="@photo.Id" @onchange="@((e) => SelectPhoto(photo.Id, e.Value))" value="@photo.Id" />
                                 <label for="@photo.Id">
-                                    <img src="/images/@photo.Id" />
+                                    <img data-src="/images/@photo.Id" class="lazy"/>
                                 </label>
                             }
-
-                        }
-                        else
-                        {
-
-                            @foreach (var photo in usersImages)
+                            else
                             {
                                 <a href="/images/@photo.Id" data-lightbox="photos">
-                                    <img src="/images/@photo.Id" />
+                                    <img data-src="/images/@photo.Id" class="lazy"/>
                                 </a>
                             }
-
-                        }
+                        </Virtualize>
                     }
+
+
+
+
 
                 </div>
 
@@ -156,17 +162,23 @@
                 if (User.Identity.IsAuthenticated)
                 {
                     usersImages = await PhotoService.GetUsersPhotos(UserId);
-                    _pagesCount = await PhotoService.NumberOfPages(UserId);
+                    // _pagesCount = await PhotoService.NumberOfPages(UserId);
                 }
             }
             else
             {
-                usersImages = await PhotoService.GetAlbumPhotos(AlbumId);
-                albumname = await PhotoService.GetAlbumName(AlbumId);
+                //usersImages = await PhotoService.GetAlbumPhotos(AlbumId);
+                //albumname = await PhotoService.GetAlbumName(AlbumId);
             }
         }
 
 
+    }
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("attachHandler");
+        await JSRuntime.InvokeVoidAsync("siema");
     }
 
     private void SelectImages()
@@ -222,7 +234,7 @@
                 await PhotoService.DeletePhotos(SelectedPhotos);
             else
                 await PhotoService.DeletePhotosFromAlbum(AlbumId, SelectedPhotos);
-
+            selectable = false;
             await OnInitializedAsync();
         }
     }
@@ -251,5 +263,19 @@
             this.StateHasChanged();
         }
     }
+
+
+
+
+
+    public ICollection<PhotoModel> Photos { get; set; } = new List<PhotoModel>();
+
+
+    private async ValueTask<ItemsProviderResult<PhotoModel>> LoadPhotos(ItemsProviderRequest request)
+    {
+        Photos = await PhotoService.GetUsersPhotos(UserId);
+        return new ItemsProviderResult<PhotoModel>(Photos, Photos.Count());
+    }
+
 
 }
