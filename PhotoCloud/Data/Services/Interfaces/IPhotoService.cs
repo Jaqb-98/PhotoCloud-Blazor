@@ -1,6 +1,7 @@
 ﻿using PhotoCloud.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace PhotoCloud.Services
 {
@@ -12,7 +13,7 @@ namespace PhotoCloud.Services
         /// <param name="userId"></param>
         /// <param name="photo"></param>
         /// <returns></returns>
-        Task AddPhoto(string userId, byte[] photo);
+        Task<bool> AddPhoto(string userId, byte[] photo);
 
         /// <summary>
         /// Returns one page of users photos
@@ -113,5 +114,9 @@ namespace PhotoCloud.Services
         /// <param name="photosPerPage"></param>
         /// <returns></returns>
         Task<int> NumberOfPages(string userId, int photosPerPage = 20);
+
+
+
+        string DownloadAlbum(string albumId);
     }
 }

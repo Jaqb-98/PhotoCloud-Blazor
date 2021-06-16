@@ -1,4 +1,8 @@
 ﻿@page "/albums"
+@using System.IO
+@using ICSharpCode.SharpZipLib.Zip
+@using System.Text
+@using BlazorFileSaver
 @inherits BaseComponent
 @inject IPhotoService PhotoService
 @inject IState State
@@ -38,12 +42,18 @@
                     @foreach (var album in userAlbums)
                     {
                         <div class="card" style="width: 18rem;">
-                            <img src="@Cover(album.Id).Result" class="card-img-top" alt="...">
+                            <img src="@covers[album.Id]" class="card-img-top" alt="...">
                             <div class="card-body">
                                 <h5 class="card-title">@album.AlbumName</h5>
                                 <p class="card-text">Photos: @album.Photos.Count.ToString()</p>
                                 <a @onclick="(() => SeeAlbum(album.Id))" class="btn btn-primary">See album</a>
                                 <a @onclick="(() => Delete_Click(album.Id))" class="btn btn-danger">Delete</a>
+                                <a @onclick="(() => DownloadAlbum(album.Id))" class="btn btn-success">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+                                    </svg>
+                                </a>
                                 @if (State.AreImagesSelected)
                                 {
                                     <a @onclick="(() => AddPhotosToAlbum(album.Id))" class="btn btn-primary">Add</a>
@@ -77,6 +87,12 @@
 
     private AlbumModel album;
 
+    private Dictionary<string, string> covers;
+
+
+    [Inject]
+    private IBlazorFileSaver BlazorFileSaver { get; set; }
+
     protected ConfirmBase DeleteConfirmation { get; set; }
     private string AlbumToDelete;
 
@@ -84,7 +100,10 @@
     {
         await base.OnInitializedAsync();
         if (User.Identity.IsAuthenticated)
+        {
             userAlbums = await PhotoService.GetUserAlbums(UserId);
+            await GetAlbumCovers();
+        }
 
     }
 
@@ -128,6 +147,25 @@
         var base64 = await PhotoService.MakeAlbumCover(albumId);
         var cover = $"data:image/jpg;base64,{base64}";
         return cover;
+    }
+
+    private async Task GetAlbumCovers()
+    {
+        covers = new Dictionary<string, string>();
+
+        foreach (var album in userAlbums)
+        {
+            var cover = await Cover(album.Id);
+            covers.Add(album.Id, cover);
+        }
+    }
+
+
+    private async Task DownloadAlbum(string albumId)
+    {
+        var file = PhotoService.DownloadAlbum(albumId);
+        var albumName = userAlbums.FirstOrDefault(x => x.Id == albumId).AlbumName;
+        await BlazorFileSaver.SaveAsBase64(albumName, file, "application/zip");
     }
 
 }

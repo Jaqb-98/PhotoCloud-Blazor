@@ -28,13 +28,14 @@
                 </div>
             </div>
         }
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary" disabled="@(browserFiles.Count <=0)">Submit</button>
     </form>
 </section>
 
 @code {
     private IList<string> SelectedImageDataUrls = new List<string>();
     private List<IBrowserFile> browserFiles = new List<IBrowserFile>();
+
 
     [Parameter]
     public EventCallback OnSubmitCallback { get; set; }
@@ -65,13 +66,20 @@
             var buffer = new byte[browserFile.Size];
             await browserFile.OpenReadStream(browserFile.Size).ReadAsync(buffer);
             await PhotoService.AddPhoto(UserId, buffer);
+
         }
 
-        browserFiles.Clear();
+
         SelectedImageDataUrls.Clear();
+        browserFiles.Clear();
         await OnSubmitCallback.InvokeAsync();
-        this.StateHasChanged();
-        await OnInitializedAsync();
     }
+
+    public void Refresh()
+    {
+        this.StateHasChanged();
+    }
+
+
 
 }

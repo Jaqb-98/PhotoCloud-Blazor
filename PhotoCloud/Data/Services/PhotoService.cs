@@ -1,5 +1,6 @@
 ﻿using ImageMagick;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhotoCloud.Data;
 using PhotoCloud.Models;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.SharpZipLib.Zip;
 
 
 namespace PhotoCloud.Services
@@ -30,7 +32,7 @@ namespace PhotoCloud.Services
         }
 
         #region Photos
-        private async Task SaveImageToDatabase(string userId, string photoName)
+        private async Task<bool> SaveImageToDatabase(string userId, string photoName)
         {
             var user = _context.Users.Where(x => x.Id == userId).Include(x => x.Photos).FirstOrDefault();
 
@@ -42,16 +44,20 @@ namespace PhotoCloud.Services
 
             user.Photos.Add(photo);
 
-            await _context.SaveChangesAsync();
+            var success = await _context.SaveChangesAsync();
+
+            return success > 0;
         }
 
-        public async Task AddPhoto(string userId, byte[] photo)
+        public async Task<bool> AddPhoto(string userId, byte[] photo)
         {
             var filename = Guid.NewGuid() + ".jpg";
             var filePath = Path.Combine(_photoUploadsFolder, filename);
             await File.WriteAllBytesAsync(filePath, photo);
 
-            await SaveImageToDatabase(userId, filename);
+            var success = await SaveImageToDatabase(userId, filename);
+
+            return success;
 
         }
 
@@ -79,16 +85,11 @@ namespace PhotoCloud.Services
         public async Task<ICollection<PhotoModel>> GetUsersPhotos(string userId, int page = 0, int photosPerPage = 20)
         {
             var user = await _context.Users.Where(x => x.Id == userId).Include(x => x.Photos).FirstOrDefaultAsync();
-            var user1 = await _context.Users.SingleAsync(x => x.Id == userId);
 
-            //var photos = user.Photos
-            //    .OrderByDescending(x => x.UploadDate)
-            //    .Skip(page * photosPerPage)
-            //    .Take(photosPerPage)
-            //    .ToList();
+            var userPhotos = user.Photos.Select(x => x.Id).ToList();
 
-            var photos =  user.Photos.ToList();
-            //.OrderByDescending(x => x.UploadDate)
+            var photos = await _context.Photos.Where(x => userPhotos.Contains(x.Id)).OrderByDescending(x => x.UploadDate).ToListAsync();
+
 
 
             return photos;
@@ -249,6 +250,69 @@ namespace PhotoCloud.Services
                 return null;
 
         }
+
+
+
+        public string DownloadAlbum(string albumId)
+        {
+            var album =  _context.Albums.FirstOrDefault(x => x.Id == albumId);
+
+            var webRoot = _webHostEnvironment.WebRootPath;
+            var fileName = $"{album.AlbumName}.zip";
+            var output = webRoot + "/images/" + fileName;
+
+            using (ZipOutputStream stream = new ZipOutputStream(File.Create(output)))
+            {
+                stream.SetLevel(9);
+
+                byte[] buffer = new byte[4096];
+
+                var ImageList = new List<string>();
+
+                foreach (var photo in album.Photos)
+                {
+                    ImageList.Add(webRoot + "/images/" + photo.Id);
+                }
+
+                for (int i = 0; i < ImageList.Count; i++)
+                {
+                    ZipEntry entry = new ZipEntry(Path.GetFileName(ImageList[i]));
+                    entry.DateTime = DateTime.Now;
+                    entry.IsUnicodeText = true;
+                    stream.PutNextEntry(entry);
+
+                    using (FileStream fs = File.OpenRead(ImageList[i]))
+                    {
+                        int sourceBytes;
+                        do
+                        {
+                            sourceBytes = fs.Read(buffer, 0, buffer.Length);
+                            stream.Write(buffer, 0, sourceBytes);
+                        } while (sourceBytes > 0);
+                    }
+                }
+
+                stream.Finish();
+                stream.Flush();
+                stream.Close();
+            }
+
+            byte[] result = File.ReadAllBytes(output);
+            var base64 = Convert.ToBase64String(result); 
+            if (File.Exists(output))
+            {
+                File.Delete(output);
+            }
+
+            if (result == null || !result.Any())
+            {
+                throw new Exception(String.Format("nothing found"));
+            }
+
+            return base64;
+        }
+
+
 
         #endregion
 

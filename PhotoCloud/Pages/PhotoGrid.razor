@@ -7,7 +7,6 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 
-
 <AuthorizeView>
     <Authorized>
 
@@ -50,76 +49,50 @@
             </div>
         </section>
 
+
         <section id="PhotosSection">
-            <div id="yourPhotos">
-                <div id="lightgallery">
-
-
-                    @*@foreach (var photo in usersImages)
+            <div id="yourPhotos" class="masonry">
+                @if (usersImages != null)
+                {
+                    int i = 0;
+                    @foreach (var photo in usersImages)
+                    {
+                        if (selectable)
                         {
                             <input type="checkbox" id="@photo.Id" @onchange="@((e)=> SelectPhoto(photo.Id,e.Value))" value="@photo.Id" />
                             <label for="@photo.Id">
                                 <img src="/images/@photo.Id" />
                             </label>
-                        }*@
-                    @if (usersImages != null)
-                    {
 
-                        <Virtualize Context="photo" Items="@usersImages">
-                            @if (selectable)
+                        }
+                        else
+                        {
+                            if (i < 10)
                             {
-                                <input type="checkbox" id="@photo.Id" @onchange="@((e) => SelectPhoto(photo.Id, e.Value))" value="@photo.Id" />
-                                <label for="@photo.Id">
-                                    <img data-src="/images/@photo.Id" class="lazy"/>
-                                </label>
+                                <a href="/images/@photo.Id">
+                                    <img src="/images/@photo.Id" />
+                                </a>
                             }
                             else
                             {
-                                <a href="/images/@photo.Id" data-lightbox="photos">
-                                    <img data-src="/images/@photo.Id" class="lazy"/>
+                                <a href="/images/@photo.Id">
+                                    <img src="/images/@photo.Id" loading="lazy" width="400" height="400" />
                                 </a>
                             }
-                        </Virtualize>
+                            i++;
+
+                        }
+
                     }
 
 
-
-
-
-                </div>
+                }
 
             </div>
+
         </section>
 
-        @if (AlbumId == null)
-        {
-            <section id="navigationPanel">
-                <div class="row">
-                    <div class="col">
-                        <nav aria-label="Page navigation example">
-                            <ul class="pagination">
-                                <li class="page-item"><button class="page-link" @onclick="PreviousPage" disabled="@(!(--_page >= 1))">Previous</button></li>
-                                @for (int i = 1; i <= _pagesCount; i++)
-                                {
-                                    var page = i;
-                                    if (page == _page + 1)
-                                    {
-                                        <li class="page-item active"><button value="@i" class="page-link" @onclick="(()=>GoToPage(page))">@i</button></li>
-                                    }
-                                    else
-                                    {
-                                        <li class="page-item"><button value="@i" class="page-link" @onclick="(()=>GoToPage(page))">@i</button></li>
-                                    }
-                                }
-                                <li class="page-item"><button class="page-link" @onclick="NextPage" disabled="@(!(_page++ < _pagesCount-1))">Next</button></li>
-                            </ul>
-                        </nav>
 
-                    </div>
-
-                </div>
-            </section>
-        }
 
         <Confirm @ref="DeleteConfirmation" ConfirmationChanged="DeletePhotos"></Confirm>
         <hr />
@@ -162,24 +135,34 @@
                 if (User.Identity.IsAuthenticated)
                 {
                     usersImages = await PhotoService.GetUsersPhotos(UserId);
-                    // _pagesCount = await PhotoService.NumberOfPages(UserId);
+                    _pagesCount = await PhotoService.NumberOfPages(UserId);
                 }
             }
             else
             {
-                //usersImages = await PhotoService.GetAlbumPhotos(AlbumId);
-                //albumname = await PhotoService.GetAlbumName(AlbumId);
+                usersImages = await PhotoService.GetAlbumPhotos(AlbumId);
+                albumname = await PhotoService.GetAlbumName(AlbumId);
             }
         }
 
+        this.StateHasChanged();
 
     }
 
-    protected override async void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await JSRuntime.InvokeVoidAsync("attachHandler");
-        await JSRuntime.InvokeVoidAsync("siema");
+        if (AlbumId != null)
+        {
+            if (firstRender)
+                await JSRuntime.InvokeVoidAsync("gallery");
+        }
+
+        if (!firstRender)
+            await JSRuntime.InvokeVoidAsync("gallery");
+        await base.OnAfterRenderAsync(firstRender);
+
     }
+
 
     private void SelectImages()
     {
@@ -207,8 +190,7 @@
 
     public async Task Refresh()
     {
-        this.StateHasChanged();
-        await OnInitializedAsync();
+        await this.OnInitializedAsync();
     }
 
 
@@ -237,44 +219,6 @@
             selectable = false;
             await OnInitializedAsync();
         }
-    }
-
-    private async Task NextPage()
-    {
-        _page++;
-        usersImages = await PhotoService.GetUsersPhotos(UserId, _page - 1);
-        this.StateHasChanged();
-
-    }
-
-    private async Task PreviousPage()
-    {
-        _page--;
-        usersImages = await PhotoService.GetUsersPhotos(UserId, _page - 1);
-        this.StateHasChanged();
-    }
-
-    private async Task GoToPage(int page)
-    {
-        if (page != _page)
-        {
-            _page = page;
-            usersImages = await PhotoService.GetUsersPhotos(UserId, page - 1);
-            this.StateHasChanged();
-        }
-    }
-
-
-
-
-
-    public ICollection<PhotoModel> Photos { get; set; } = new List<PhotoModel>();
-
-
-    private async ValueTask<ItemsProviderResult<PhotoModel>> LoadPhotos(ItemsProviderRequest request)
-    {
-        Photos = await PhotoService.GetUsersPhotos(UserId);
-        return new ItemsProviderResult<PhotoModel>(Photos, Photos.Count());
     }
 
 

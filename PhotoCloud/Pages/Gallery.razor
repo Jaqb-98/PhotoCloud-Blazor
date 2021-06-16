@@ -7,7 +7,7 @@
 <link href="/css/collapsible.css" rel="stylesheet" />
 <AuthorizeView>
     <Authorized>
-        <UploadImagesControl OnSubmitCallback="RefreshGallery"></UploadImagesControl>
+        <UploadImagesControl OnSubmitCallback="RefreshGallery" @ref="uploadImages"></UploadImagesControl>
 
         <PhotoGrid @ref="photoGrid"></PhotoGrid>
     </Authorized>
@@ -19,11 +19,13 @@
 
 @code {
     public PhotoGrid photoGrid { get; set; } = new PhotoGrid();
+    public UploadImagesControl uploadImages { get; set; }
 
 
     private async Task RefreshGallery()
     {
-        await photoGrid.Refresh();
+       uploadImages.Refresh();
+       await photoGrid.Refresh();
     }
 
 }

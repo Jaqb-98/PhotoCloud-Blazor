@@ -1,0 +1,9 @@
+﻿body {
+}
+
+h1 {
+    margin: auto;
+    max-width: 500px;
+    font-family: sans-serif;
+    text-align:center;
+}
