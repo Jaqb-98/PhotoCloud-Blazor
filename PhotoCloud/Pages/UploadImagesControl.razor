@@ -66,9 +66,7 @@
             var buffer = new byte[browserFile.Size];
             await browserFile.OpenReadStream(browserFile.Size).ReadAsync(buffer);
             await PhotoService.AddPhoto(UserId, buffer);
-
         }
-
 
         SelectedImageDataUrls.Clear();
         browserFiles.Clear();

@@ -25,26 +25,26 @@
                 <div class="col">
                     <button @onclick="SelectImages" type="button" class="btn btn-primary">Select</button>
 
-                </div>
-                <div class="col">
+
                     @if (selectable)
                     {
-                        <button @onclick="AddPhotos" type="button" class="btn btn-primary">Add to album</button>
+                        <button @onclick="AddPhotos" type="button" class="btn btn-primary" disabled="@(SelectedPhotos.Count <=0)">Add to album</button>
                     }
-                </div>
-                <div class="col">
+
                     @if (selectable)
                     {
                         @if (String.IsNullOrEmpty(albumname))
                         {
-                            <button @onclick="Delete_Click" type="button" class="btn btn-danger">Delete</button>
+                            <button @onclick="Delete_Click" type="button" class="btn btn-danger" disabled="@(SelectedPhotos.Count <=0)">Delete</button>
                         }
                         else
                         {
-                            <button @onclick="Delete_Click" type="button" class="btn btn-danger">Delete from album</button>
+                            <button @onclick="Delete_Click" type="button" class="btn btn-danger" disabled="@(SelectedPhotos.Count <=0)">Delete from album</button>
                         }
                     }
                 </div>
+                <div class="col-6"></div>
+
 
             </div>
         </section>
@@ -113,9 +113,6 @@
     private bool selectable = false;
 
 
-    private int _page = 1;
-
-    private int _pagesCount;
 
     [Parameter]
     public string AlbumId { get; set; } = null;
@@ -135,7 +132,6 @@
                 if (User.Identity.IsAuthenticated)
                 {
                     usersImages = await PhotoService.GetUsersPhotos(UserId);
-                    _pagesCount = await PhotoService.NumberOfPages(UserId);
                 }
             }
             else
@@ -144,9 +140,7 @@
                 albumname = await PhotoService.GetAlbumName(AlbumId);
             }
         }
-
         this.StateHasChanged();
-
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -159,7 +153,6 @@
 
         if (!firstRender)
             await JSRuntime.InvokeVoidAsync("gallery");
-        await base.OnAfterRenderAsync(firstRender);
 
     }
 
